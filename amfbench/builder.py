@@ -50,9 +50,7 @@ def simple(num):
     Return a list of dicts with some simple data types inserted into it.
 
     Some points to note:
-     * There are no direct object references.
-     * If using AMF3, C{string} and C{unicode} *should* be encoded as string
-       references.
+     * There are no object or string references.
 
     @param num: The size of the list.
     """
@@ -63,7 +61,6 @@ def simple(num):
             'number': 10,
             'float': 3.24,
             'string': 'foo number %i' % i,
-            'unicode': u'foo number %i' % i,
         }
 
         ret.append(test_obj)
@@ -88,9 +85,9 @@ def complex(num):
         obj = SomeClass()
 
         attrs = {
-            'null': None,
-            'list': ['test', u'tester'],
-            'dict': {'test': u'ignore'},
+            '_null': None,
+            'list': ['test', 'tester'],
+            'dict': {'test': 'ignore'},
             'string_ref': 'string reference'
         }
 
@@ -99,7 +96,6 @@ def complex(num):
         obj.number = i
         obj.float = 3.14
         obj.unicode = u'ƒøø'
-        obj.str = 'a l' + 'o' * 500 + 'ng string'
 
         obj.sub_obj = SomeClass()
         obj.sub_obj.number = i

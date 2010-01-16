@@ -43,6 +43,31 @@ class ICodec:
         """
 
 
+def get_available_packages():
+    """
+    Returns a list of codec implementations.
+    """
+    import os.path
+
+    ret = []
+
+    for f in os.listdir(os.path.dirname(__file__)):
+        filename, ext = os.path.splitext(f)
+
+        if ext != '.py':
+            continue
+
+        if not filename.startswith('_'):
+            continue
+
+        if filename == '__init__':
+            continue
+
+        ret.append(filename[1:])
+
+    return ret
+
+
 def get_codec(name):
     """
     Returns a ICodec instance for C{name}.
