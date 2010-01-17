@@ -73,7 +73,7 @@ def encode(codec, builder_name, size, encoding):
     else:
         result = time.time() - start
 
-    return result, bytes
+    return result, len(bytes)
 
 
 def decode(codec, builder_name, size, encoding):
