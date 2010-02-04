@@ -6,7 +6,7 @@
             import flash.net.Responder;
 
             import amfbench.Builder;
-            
+
             // Gateway connection object
             private var gateway:NetConnection;
 
@@ -18,8 +18,8 @@
             public var encodings:Array = [ObjectEncoding.AMF0, ObjectEncoding.AMF3];
             public var operations:Array = ['simple', 'complex', 'static', 'reference'];
             public var numbers:Array = [1000, 2000, 5000, 10000, 20000, 50000];
-    
-            public function initApp(): void
+
+            public function initApp():void
             {
                 gateway = new NetConnection();
 
@@ -39,7 +39,7 @@
             }
 
             // Result handler method 
-            private function onResult( result:* ): void
+            private function onResult(result:*):void
             {
                 num += 1;
 
@@ -60,7 +60,7 @@
 
                 build();
             }
-            
+
             private function onFault(error:*): void
             {
                 // diaf

@@ -65,91 +65,49 @@ def parse_args():
     return options, args
 
 
-def bench_encoding(options, args):
+def _bench(options, args, type):
     binaries = amfbench.get_binaries()
     results = {}
 
-    for c in options.codecs:
-        package = codec.get_codec(c)
+    for b in args:
+        s = results.setdefault(b, {})
 
-        package.setUp()
+        for encoding in options.encodings:
+            n = binaries[b][encoding]
+            t = s.setdefault(encoding, {})
 
-        r = results[package.package] = {}
+            for size in n:
+                r = t.setdefault(size, {})
 
-        options.logger.log('Running encoding benchmarks for %s' % (package.name,))
+                for c in options.codecs:
+                    package = codec.get_codec(c)
 
-        for b in args:
-            s = r.setdefault(b, {})
+                    package.setUp()
 
-            for encoding in options.encodings:
-                n = binaries[b][encoding]
-                t = s.setdefault(encoding, [])
+                    func = getattr(amfbench, type)
 
-                for size in n:
-                    time, payload = amfbench.encode(package, b, size, encoding)
+                    r[package.package] = func(package, b, size, encoding)
 
-                    t.append((size, time, payload))
-
-                    options.logger.log(' %s %d AMF%d: %s' % (b, size, encoding, time))
-
-        package.tearDown()
+                    package.tearDown()
 
     return results
+
+
+def bench_encoding(options, args):
+    return _bench(options, args, 'encode')
 
 
 def bench_decoding(options, args):
-    binaries = amfbench.get_binaries()
-    results = {}
-
-    for c in options.codecs:
-        package = codec.get_codec(c)
-
-        package.setUp()
-
-        r = results[package.package] = {}
-
-        options.logger.log('Running decoding benchmarks for %s' % (package.name,))
-
-        for b in args:
-            s = r.setdefault(b, {})
-
-            for encoding in options.encodings:
-                n = binaries[b][encoding]
-                t = s.setdefault(encoding, [])
-
-                for size in n:
-                    time, payload = amfbench.decode(package, b, size, encoding)
-
-                    t.append((size, time, payload))
-
-                    options.logger.log(' %s %d AMF%d: %s' % (b, size, encoding, time))
-
-        package.tearDown()
-
-    return results
-
-
-def csv_results(results):
-    import csv
-
-    w = csv.writer(sys.stdout, quoting=csv.QUOTE_MINIMAL)
-
-    for package, x in results.iteritems():
-        for builder_name, y in x.iteritems():
-            for encoding, z in y.iteritems():
-                for j in z:
-                    n, time, payload = j
-
-                    w.writerow([package, builder_name, encoding, n, time])
+    return _bench(options, args, 'decode')
 
 
 def main():
     options, args = parse_args()
 
-    decoding_results = bench_decoding(options, args)
+    #decoding_results = bench_decoding(options, args)
     encoding_results = bench_encoding(options, args)
 
-    csv_results(encoding_results)
+    print encoding_results
 
 
 if __name__ == '__main__':
