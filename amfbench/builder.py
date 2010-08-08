@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
+
 """
+Contains a list of functions that will build object graphs for the codec to
+encode.
 """
 
 builders = ['simple', 'complex', 'static', 'reference']
+
+__all__ = builders + ['SomeClass', 'SomeStaticClass']
 
 
 class BaseObject(object):
@@ -11,13 +16,14 @@ class BaseObject(object):
     """
 
     def __repr__(self):
-        return '<%s %r @ 0x%x>' % (self.__class__.__name__, self.__dict__, id(self))
+        return '<%s %r @ 0x%x>' % (
+            self.__class__.__name__, self.__dict__, id(self))
 
     def __eq__(self, other):
-        try:
-            return self.__class__ is other.__class__ and self.__dict__ == other.__dict__
-        except:
-            return False
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+
+        return False
 
 
 class SomeClass(BaseObject):
