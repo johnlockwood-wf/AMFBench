@@ -1,25 +1,24 @@
 """
+AMFBench codec for U{PyAMF<http://pyamf.org/>}
 """
 
 import pyamf
-
-from pyamf import amf0
-from pyamf import amf3
 
 from amfbench import builder
 
 
 class Codec(object):
     """
-    @implements: amfbench.codec.ICodec
+    @implements: L{amfbench.codec.ICodec}
     """
 
     name = 'PyAMF'
-    package = 'pyamf'
+    package = pyamf.__name__
     version = str(pyamf.__version__)
 
     def setUp(self):
-        pyamf.register_class(builder.SomeClass, builder.aliases[builder.SomeClass])
+        pyamf.register_class(builder.SomeClass,
+            builder.aliases[builder.SomeClass])
 
         builder.SomeStaticClass.__amf__ = {
             'dynamic': False,
