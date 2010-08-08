@@ -1,9 +1,11 @@
 """
+A codec implementation provides the ability to encode and decode AMF payloads.
 """
 
-class ICodec:
+
+class ICodec(object):
     """
-    Provides a unified interface to working with various AMF implementations
+    Provides a unified interface to working with various AMF implementations.
 
     @ivar name: The printable name of the codec (e.g. PyAMF)
     @ivar package: The package name for the project (e.g. amfast)
@@ -36,16 +38,17 @@ class ICodec:
         """
         Decodes the C{bytes} and returns the result.
 
-        @param bytes: The raw bytes to .
+        @param bytes: The raw bytes to decode.
         @param amf3: A boolean determining whether or not to encode in AMF3.
             If this value is C{False} then AMF0 should be used.
-        @return: The bytes produced in the encode operation.
+        @return: The decoded object graph.
         """
 
 
-def get_available_packages():
+def get_available_implementations():
     """
-    Returns a list of codec implementations.
+    Returns a list of available codec implementations. Globs for
+    C{amfbench/codec/_(.*).py}
     """
     import os.path
 
@@ -68,7 +71,7 @@ def get_available_packages():
     return ret
 
 
-def get_codec(name):
+def get_implementation(name):
     """
     Returns a ICodec instance for C{name}.
 
