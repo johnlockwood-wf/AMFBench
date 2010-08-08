@@ -1,9 +1,15 @@
+"""
+Provides a simple AMF remoting gateway that will strip the remoting wrapper and
+dump the raw payload. Use in conjunction with C{amfbench/flex/main.swf}
+"""
+
 import os
 import sys
 import logging
 from optparse import OptionParser
-
 import struct
+
+import amfbench
 
 
 class BaseMiddleware(object):
@@ -36,8 +42,41 @@ class CrossdomainMiddleware(BaseMiddleware):
         return self.app(environ, start_response)
 
 
+class ServeSWF(BaseMiddleware):
+    """
+    """
+
+    swf_file = 'flex/main.swf'
+    url = '/'
+    content_type = 'application/x-shockwave-flash'
+
+    def __call__(self, environ, start_response):
+        if environ['PATH_INFO'] == self.url:
+            try:
+                f = open(self.swf_file, 'rb')
+            except:
+                start_response('404 Not Found', [])
+
+                return []
+
+            bytes = f.read()
+
+            start_response('200 OK', [
+                ('Content-Type', self.content_type),
+                ('Content-Length', str(len(bytes)))
+            ])
+
+            return [bytes]
+
+        return self.app(environ, start_response)
+
+
 def handle_request(environ, start_response):
     """
+    Strips the AMF remoting wrapper from the request and dumps it to a file
+    determined by the service request method and version.
+
+    @see: L{amfbench.get_blob_filename}
     """
     bytes = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
 
@@ -63,12 +102,13 @@ def handle_request(environ, start_response):
 
     bytes = bytes[bytes.find(boundary) + len(boundary):]
 
-    f = open(os.path.join('..', 'var', '%s.amf%d' % (service_method, amf_version,)), 'wb')
+    f = open(amfbench.get_blob_filename(service_method, amf_version), 'wb')
 
     f.write(bytes)
     f.flush()
     f.close()
 
+    # return an empty success response
     ret = '\x00\x00\x00\x00\x00\x01'
 
     s = '%s/onResult' % (uid,)
@@ -105,7 +145,7 @@ def parse_options():
 
 
 def get_app(options):
-    app = CrossdomainMiddleware(handle_request)
+    app = ServeSWF(CrossdomainMiddleware(handle_request))
 
     return app
 

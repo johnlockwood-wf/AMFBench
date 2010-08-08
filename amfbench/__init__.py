@@ -96,4 +96,4 @@ def decode(codec, builder_name, size, encoding):
     else:
         result = time.time() - start
 
-    return result, payload
+    return result, None

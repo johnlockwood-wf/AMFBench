@@ -39,9 +39,13 @@ class Logger(object):
 def parse_args():
     parser = OptionParser()
 
-    parser.add_option('-e', '--encoding', action='append', dest='encodings', choices=('0', '3'))
-    parser.add_option('-c', '--codec', action='append', dest='codecs', choices=codec.get_available_packages())
-    parser.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False)
+    parser.add_option('-e', '--encoding', action='append', dest='encodings',
+        choices=('0', '3'))
+    parser.add_option('-c', '--codec', action='append', dest='codecs',
+        choices=codec.get_available_packages())
+    parser.add_option('-v', '--verbose', action='store_true', dest='verbose',
+        default=False)
+    parser.add_option('-o', '--out', action='store', dest='output', default=None)
 
     options, args = parser.parse_args()
 
@@ -101,13 +105,31 @@ def bench_decoding(options, args):
     return _bench(options, args, 'decode')
 
 
+def write_pickle(options, decode_results, encode_results):
+    import cPickle as pickle
+
+    f = None
+
+    # if output is not specified, we dump to stdout
+    if options.output:
+        f = open(options.output, 'wb')
+    else:
+        import sys
+        f = sys.stdout
+
+    pickle.dump({
+        'decode': decode_results,
+        'encode': encode_results
+    }, f, pickle.HIGHEST_PROTOCOL)
+
+
 def main():
     options, args = parse_args()
 
-    #decoding_results = bench_decoding(options, args)
-    encoding_results = bench_encoding(options, args)
+    decode_results = bench_decoding(options, args)
+    encode_results = bench_encoding(options, args)
 
-    print encoding_results
+    write_pickle(options, decode_results, encode_results)
 
 
 if __name__ == '__main__':
