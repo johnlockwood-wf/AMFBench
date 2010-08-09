@@ -149,10 +149,16 @@ def _bench(options, args, type):
 
 
 def bench_encoding(options, args):
+    if options.only_decode:
+        return {}
+
     return _bench(options, args, 'encode')
 
 
 def bench_decoding(options, args):
+    if options.only_encode:
+        return {}
+
     return _bench(options, args, 'decode')
 
 
@@ -176,7 +182,7 @@ def write_pickle(options, decode_results, encode_results):
 def main(*args):
     options, args = parse_args(*args)
 
-    decode_results = {}#bench_decoding(options, args)
+    decode_results = bench_decoding(options, args)
     encode_results = bench_encoding(options, args)
 
     write_pickle(options, decode_results, encode_results)

@@ -58,7 +58,7 @@ def decode(codec, name, size, encoding):
     if name not in builder.builders:
         raise NameError('Unknown builder %r' % (name,))
 
-    file_name = _get_file(name, size, encoding)
+    file_name = get_blob_filename(name, size, encoding)
 
     f = open(file_name, 'rb')
     bytes = f.read()
