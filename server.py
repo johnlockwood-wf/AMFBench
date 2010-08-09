@@ -102,7 +102,9 @@ def handle_request(environ, start_response):
 
     bytes = bytes[bytes.find(boundary) + len(boundary):]
 
-    f = open(amfbench.get_blob_filename(service_method, amf_version), 'wb')
+    builder_name, size = service_method.split('-')
+
+    f = open(amfbench.get_blob_filename(builder_name, int(size), amf_version), 'wb')
 
     f.write(bytes)
     f.flush()
