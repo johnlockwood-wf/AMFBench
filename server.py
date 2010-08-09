@@ -8,6 +8,7 @@ import sys
 import logging
 from optparse import OptionParser
 import struct
+import mimetypes
 
 import amfbench
 
@@ -34,7 +35,7 @@ class CrossdomainMiddleware(BaseMiddleware):
         if environ['PATH_INFO'] == '/crossdomain.xml':
             start_response('200 OK', [
                 ('Content-Type', 'application/xml'),
-                ('Content-Length', str(len(bytes)))
+                ('Content-Length', str(len(self.xml)))
             ])
 
             return [self.xml]
@@ -42,91 +43,124 @@ class CrossdomainMiddleware(BaseMiddleware):
         return self.app(environ, start_response)
 
 
-class ServeSWF(BaseMiddleware):
+class ServeStatic(BaseMiddleware):
     """
+    Serves static files.
     """
 
-    swf_file = 'flex/main.swf'
-    url = '/'
-    content_type = 'application/x-shockwave-flash'
+    def __init__(self, app, dir_name, url_root):
+        BaseMiddleware.__init__(self, app)
+
+        self.dir_name = os.path.abspath(dir_name)
+        self.url_root = url_root
+
+        mimetypes.init()
 
     def __call__(self, environ, start_response):
-        if environ['PATH_INFO'] == self.url:
-            try:
-                f = open(self.swf_file, 'rb')
-            except:
-                start_response('404 Not Found', [])
+        if not environ['PATH_INFO'].startswith(self.url_root):
+            return self.app(environ, start_response)
 
-                return []
+        file_name = environ['PATH_INFO'][len(self.url_root):]
 
-            bytes = f.read()
+        full_path = os.path.abspath(os.path.join(self.dir_name, file_name))
 
-            start_response('200 OK', [
-                ('Content-Type', self.content_type),
-                ('Content-Length', str(len(bytes)))
-            ])
+        if not os.path.isfile(full_path):
+            return self.app(environ, start_response)
 
-            return [bytes]
+        f = open(full_path, 'rb')
 
-        return self.app(environ, start_response)
+        ext = os.path.splitext(full_path)[1]
+        bytes = f.read()
+
+        start_response('200 OK', [
+            ('Content-Type', mimetypes.types_map[ext]),
+            ('Content-Length', str(len(bytes)))
+        ])
+
+        return [bytes]
 
 
-def handle_request(environ, start_response):
+class DecodingGeneratorGateway(BaseMiddleware):
     """
-    Strips the AMF remoting wrapper from the request and dumps it to a file
-    determined by the service request method and version.
-
-    @see: L{amfbench.get_blob_filename}
+    Accepts Flash Remoting requests and dumps it to a named file, returning a
+    dummy response.
     """
-    bytes = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
 
-    amf_version = struct.unpack('!H', bytes[:2])[0]
+    url = '/gw'
 
-    assert bytes[2:6] == '\x00\x00\x00\x01'
-    l = struct.unpack('!H', bytes[6:8])[0]
+    @staticmethod
+    def strip_envelope(bytes):
+        amf_version = struct.unpack('!H', bytes[:2])[0]
 
-    service_method = bytes[8:l+8]
-    bytes = bytes[l+8:]
+        assert bytes[2:6] == '\x00\x00\x00\x01'
+        l = struct.unpack('!H', bytes[6:8])[0]
 
-    l = struct.unpack('!H', bytes[0:2])[0]
-    uid = bytes[2:l+2]
+        service_method = bytes[8:l+8]
+        bytes = bytes[l+8:]
 
-    bytes = bytes[l+2:]
+        l = struct.unpack('!H', bytes[0:2])[0]
+        uid = bytes[2:l+2]
 
-    if amf_version == 0:
-        boundary = '\n\x00\x00\x00\x01'
-    elif amf_version == 3:
-        boundary = '\x00\x00\x00\x01\x11'
-    else:
-        raise RuntimeError('Unknown AMF type')
+        bytes = bytes[l+2:]
 
-    bytes = bytes[bytes.find(boundary) + len(boundary):]
+        if amf_version == 0:
+            boundary = '\n\x00\x00\x00\x01'
+        elif amf_version == 3:
+            boundary = '\x00\x00\x00\x01\x11'
+        else:
+            raise RuntimeError('Unknown AMF type')
 
-    builder_name, size = service_method.split('-')
+        bytes = bytes[bytes.find(boundary) + len(boundary):]
 
-    f = open(amfbench.get_blob_filename(builder_name, int(size), amf_version), 'wb')
+        builder_name, size = service_method.split('-')
 
-    f.write(bytes)
-    f.flush()
-    f.close()
+        return builder_name, size, amf_version, uid, bytes
 
-    # return an empty success response
-    ret = '\x00\x00\x00\x00\x00\x01'
+    @staticmethod
+    def generate_response(uid):
+        # return an empty success response
+        ret = '\x00\x00\x00\x00\x00\x01'
 
-    s = '%s/onResult' % (uid,)
+        s = '%s/onResult' % (uid,)
 
-    ret += struct.pack('!H', len(s))
-    ret += s
+        ret += struct.pack('!H', len(s))
+        ret += s
 
-    ret += '\x00\x04null\x00\x00\x00\x00\x05'
+        ret += '\x00\x04null\x00\x00\x00\x00\x05'
 
-    # flash doesn't respond to 204 :-/
-    start_response('200 OK', [
-        ('Content-Length', str(len(ret))),
-        ('Content-Type', 'application/x-amf')
-    ])
+        return ret
 
-    return [ret]
+    def __call__(self, environ, start_response):
+        if environ['PATH_INFO'] != self.url:
+            return self.app(environ, start_response)
+
+        if environ.get('REQUEST_METHOD', 'GET') == 'GET':
+            start_response('400 Bad Request', [])
+
+            return ['This gateway only accepts POST requests']
+
+        bytes = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
+
+        builder_name, size, amf_version, uid, bytes = self.strip_envelope(bytes)
+
+        f = open(amfbench.get_blob_filename(
+            builder_name, int(size), amf_version), 'wb')
+
+        f.write(bytes)
+        f.flush()
+        f.close()
+
+        del f
+
+        ret = self.generate_response(uid)
+
+        # flash doesn't respond to 204 :-/
+        start_response('200 OK', [
+            ('Content-Length', str(len(ret))),
+            ('Content-Type', 'application/x-amf')
+        ])
+
+        return [ret]
 
 
 def build_argparse():
@@ -140,6 +174,28 @@ def build_argparse():
     return parser
 
 
+class Redirector(BaseMiddleware):
+    """
+    Redirects from one url to another
+    """
+
+    def __init__(self, app, url_from, url_to):
+        BaseMiddleware.__init__(self, app)
+
+        self.url_from = url_from
+        self.url_to = url_to
+
+    def __call__(self, environ, start_response):
+        if environ.get('PATH_INFO', None) != self.url_from:
+            return self.app(environ, start_response)
+
+        start_response('302 Moved Temporarily', [
+            ('Location', self.url_to)
+        ])
+
+        return []
+
+
 def parse_options():
     parser = build_argparse()
 
@@ -147,7 +203,16 @@ def parse_options():
 
 
 def get_app(options):
-    app = ServeSWF(CrossdomainMiddleware(handle_request))
+    def four_oh_four(environ, start_response):
+        start_response('404 Not Found', [])
+
+        return ['<html><body><h1>404 Not Found</h1></body></html>']
+
+    app = four_oh_four
+    app = Redirector(app, '/', '/static/AMFBench.html')
+    app = CrossdomainMiddleware(app)
+    app = DecodingGeneratorGateway(app)
+    app = ServeStatic(app, 'static', '/static/')
 
     return app
 
