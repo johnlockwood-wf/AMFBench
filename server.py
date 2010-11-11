@@ -3,7 +3,7 @@ Provides a simple AMF remoting gateway that will strip the remoting wrapper and
 dump the raw payload. Use in conjunction with C{amfbench/flex/main.swf}
 """
 
-import os
+import os.path
 import sys
 import logging
 from optparse import OptionParser
@@ -143,8 +143,17 @@ class DecodingGeneratorGateway(BaseMiddleware):
 
         builder_name, size, amf_version, uid, bytes = self.strip_envelope(bytes)
 
-        f = open(amfbench.get_blob_filename(
-            builder_name, int(size), amf_version), 'wb')
+        fn = amfbench.get_blob_filename(
+            builder_name, int(size), amf_version)
+
+        dn = os.path.dirname(fn)
+
+        try:
+            os.makedirs(dn)
+        except OSError:
+            pass
+
+        f = open(fn, 'wb')
 
         f.write(bytes)
         f.flush()
@@ -209,10 +218,10 @@ def get_app(options):
         return ['<html><body><h1>404 Not Found</h1></body></html>']
 
     app = four_oh_four
-    app = Redirector(app, '/', '/static/AMFBench.html')
+    app = Redirector(app, '/', '/flex/DecodingGenerator.swf')
     app = CrossdomainMiddleware(app)
     app = DecodingGeneratorGateway(app)
-    app = ServeStatic(app, 'static', '/static/')
+    app = ServeStatic(app, 'flex', '/flex/')
 
     return app
 
