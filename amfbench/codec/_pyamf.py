@@ -17,16 +17,20 @@ class Codec(object):
     version = str(pyamf.__version__)
 
     def setUp(self):
-        pyamf.register_class(builder.SomeClass,
+        a = pyamf.register_class(builder.SomeClass,
             builder.aliases[builder.SomeClass])
+
+        a.compile()
 
         builder.SomeStaticClass.__amf__ = {
             'dynamic': False,
             'static': ('name', 'score', 'rank')
         }
 
-        pyamf.register_class(builder.SomeStaticClass,
+        a = pyamf.register_class(builder.SomeStaticClass,
             builder.aliases[builder.SomeStaticClass])
+
+        a.compile()
 
     def tearDown(self):
         pyamf.unregister_class(builder.SomeClass)
