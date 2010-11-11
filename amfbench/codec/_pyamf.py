@@ -42,13 +42,4 @@ class Codec(object):
     def decode(self, bytes, amf3):
         encoding = pyamf.AMF3 if amf3 else pyamf.AMF0
 
-        ret = [x for x in pyamf.decode(bytes, encoding=encoding)]
-
-        l = len(ret)
-
-        if l == 0:
-            return None
-        elif l == 1:
-            return ret[0]
-        else:
-            return ret
+        return list(pyamf.decode(bytes, encoding=encoding))
