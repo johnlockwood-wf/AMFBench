@@ -41,7 +41,7 @@ def encode(codec, name, size, encoding):
     else:
         result = time.time() - start
 
-    return result, len(bytes)
+    return result
 
 
 def decode(codec, name, size, encoding):
@@ -89,9 +89,6 @@ def get_blob_filename(builder_name, size, encoding):
     fn = '%s-%d.amf%d' % (builder_name, size, encoding)
 
     full_path = os.path.abspath(os.path.join(base_path, fn))
-
-    if not os.path.isfile(full_path):
-        return None
 
     return full_path
 
