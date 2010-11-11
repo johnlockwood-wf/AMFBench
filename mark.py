@@ -67,8 +67,6 @@ def parse_args(*args):
     parser.add_option('-o', '--out', action='store', dest='output',
         default=None, help='Where to write the pickle of benchmark results. '
         'Default is stdout')
-    parser.add_option('-p', '--profile', action='store_false', dest='profile',
-        help='Benchmark with profiling enabled')
 
     advanced = OptionGroup(parser, "Advanced options")
 
