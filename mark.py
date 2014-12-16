@@ -8,6 +8,7 @@ This is represented in the C{var/[builder]-[num].amf[version]}
 We get each package to decode the results of each binary and then encode the
 same payload.
 """
+import pprint
 
 import sys
 import os.path
@@ -175,6 +176,11 @@ def write_pickle(options, decode_results, encode_results):
         'decode': decode_results,
         'encode': encode_results
     }, f, pickle.HIGHEST_PROTOCOL)
+
+    print "decode_results"
+    pprint.pprint(decode_results)
+    print "encode_results"
+    pprint.pprint(encode_results)
 
 
 def main(*args):
