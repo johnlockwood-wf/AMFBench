@@ -27,8 +27,6 @@ package {
     {
         gateway = new NetConnection();
 
-        gateway.connect(gw_url);
-
         build();
     }
 
@@ -38,8 +36,9 @@ package {
         var responder:Responder = new Responder(onResult, onFault);
 
         gateway.objectEncoding = encodings[encoding];
-
+        gateway.connect(gw_url);
         gateway.call(operations[op] + '-' + numbers[num], responder, param);
+        gateway.close();
     }
 
     // Result handler method
