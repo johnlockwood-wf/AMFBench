@@ -5,6 +5,8 @@ import os.path
 import time
 
 from amfbench import builder
+from amfbench.codec import _cpickle
+import cPickle
 
 binaries = None
 base_path = os.path.abspath(os.path.join(
@@ -37,7 +39,7 @@ def encode(codec, name, size, encoding):
     try:
         bytes = codec.encode(payload, amf3)
     except Exception, bytes:
-        result = None
+        raise
     else:
         result = time.time() - start
 
@@ -59,10 +61,14 @@ def decode(codec, name, size, encoding):
         raise NameError('Unknown builder %r' % (name,))
 
     file_name = get_blob_filename(name, size, encoding)
-
-    f = open(file_name, 'rb')
-    bytes = f.read()
-    f.close()
+    if isinstance(codec, _cpickle.Codec):
+        build_func = getattr(builder, name)
+        payload = build_func(size)
+        bytes = cPickle.dumps(payload)
+    else:
+        f = open(file_name, 'rb')
+        bytes = f.read()
+        f.close()
 
     amf3 = False if encoding == 0 else True
 
@@ -71,7 +77,7 @@ def decode(codec, name, size, encoding):
     try:
         payload = codec.decode(bytes, amf3)
     except Exception:
-        result = None
+        raise
     else:
         result = time.time() - start
 
