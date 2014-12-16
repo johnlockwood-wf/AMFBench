@@ -75,6 +75,9 @@ def parse_args(*args):
     advanced.add_option('--only-encode', dest='only_encode',
         action='store_true', help='Only benchmark encoding')
 
+    advanced.add_option('--no-cpyamf', dest='no_cpyamf',
+        action='store_true', help='Only pure pyamf')
+
     parser.add_option_group(advanced)
 
     options, args = parser.parse_args()
@@ -179,6 +182,9 @@ def write_pickle(options, decode_results, encode_results):
 
 def main(*args):
     options, args = parse_args(*args)
+    if options.no_cpyamf:
+        import pyamf
+        pyamf.USE_CPYAMF = False
 
     decode_results = bench_decoding(options, args)
     encode_results = bench_encoding(options, args)
