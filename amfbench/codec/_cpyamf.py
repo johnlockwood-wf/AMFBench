@@ -12,8 +12,8 @@ class Codec(object):
     @implements: L{amfbench.codec.ICodec}
     """
 
-    name = 'PyAMF'
-    package = pyamf.__name__
+    name = 'cPyAMF'
+    package = 'cpyamf'
     version = str(pyamf.__version__)
 
     def setUp(self):
@@ -41,11 +41,9 @@ class Codec(object):
     def encode(self, payload, amf3):
         encoding = pyamf.AMF3 if amf3 else pyamf.AMF0
 
-        return pyamf.encode(payload, encoding=encoding,
-                            disable_cpyamf=True).getvalue()
+        return pyamf.encode(payload, encoding=encoding).getvalue()
 
     def decode(self, bytes, amf3):
         encoding = pyamf.AMF3 if amf3 else pyamf.AMF0
-        result = list(pyamf.decode(bytes, encoding=encoding,
-                                   disable_cpyamf=True))
+        result = list(pyamf.decode(bytes, encoding=encoding))
         return result
